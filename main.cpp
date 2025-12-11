@@ -499,7 +499,7 @@ int main() {
                 // Tambah atau Update Lagu
                 string judul, artis;
                 
-                cout << "\n--- Tambah Lagu Baru ---\n";
+                cout << "\n--- Tambah Lagu Baru / Update Lagu ---\n";
                 cout << "Masukkan judul lagu: ";
                 getline(cin, judul);
                 

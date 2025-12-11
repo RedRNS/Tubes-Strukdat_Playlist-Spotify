@@ -277,8 +277,8 @@ public:
         hapusPohon(akar);
     }
     
-    // Masukkan atau Update Lagu
-    void masukkanAtauUpdate(string judul, string artis, int durasi) {
+    // Masukkan atau Update Lagu (overload untuk cek dulu tanpa durasi)
+    bool masukkanAtauUpdate(string judul, string artis) {
         // Cek apakah lagu sudah ada
         Lagu* ada = cariJudul(akar, judul);
         
@@ -295,9 +295,9 @@ public:
             
             int pilihan;
             cin >> pilihan;
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             
             if (pilihan == 1) {
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 if (ada->jumlahTag >= 5) {
                     cout << "Tidak bisa menambah tag lagi. Maksimal 5 tag sudah tercapai!\n";
                 } else {
@@ -312,13 +312,21 @@ public:
                 cout << "Masukkan durasi baru (detik): ";
                 int durasiBaru;
                 cin >> durasiBaru;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 ada->durasi = durasiBaru;
                 cout << "Durasi berhasil diupdate!\n";
+            } else {
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Operasi dibatalkan.\n";
             }
-        } else {
-            // Lagu tidak ada - masukkan baru
-            akar = masukkanHelper(akar, judul, artis, durasi);
+            return true; // Lagu sudah ada
         }
+        return false; // Lagu belum ada
+    }
+    
+    // Masukkan lagu baru dengan durasi
+    void masukkanLaguBaru(string judul, string artis, int durasi) {
+        akar = masukkanHelper(akar, judul, artis, durasi);
     }
     
     // Cari berdasarkan judul
@@ -490,7 +498,6 @@ int main() {
             case 1: {
                 // Tambah atau Update Lagu
                 string judul, artis;
-                int durasi;
                 
                 cout << "\n--- Tambah Lagu Baru ---\n";
                 cout << "Masukkan judul lagu: ";
@@ -499,11 +506,17 @@ int main() {
                 cout << "Masukkan nama artis: ";
                 getline(cin, artis);
                 
-                cout << "Masukkan durasi (detik): ";
-                cin >> durasi;
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                // Cek dulu apakah lagu sudah ada
+                bool sudahAda = playlist.masukkanAtauUpdate(judul, artis);
                 
-                playlist.masukkanAtauUpdate(judul, artis, durasi);
+                // Jika lagu belum ada, baru tanyakan durasi
+                if (!sudahAda) {
+                    int durasi;
+                    cout << "Masukkan durasi (detik): ";
+                    cin >> durasi;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    playlist.masukkanLaguBaru(judul, artis, durasi);
+                }
                 
                 break;
             }

@@ -5,14 +5,12 @@
 using namespace std;
 
 // ============================================================
-// STRUKTUR NODE - Lagu dalam BST (Kunci: judul)
+// STRUKTUR NODE CHILD - Lagu dalam BST (Kunci: judul)
 // ============================================================
 struct Lagu {
-    string judul;        // Kunci BST (harus unik)
+    string judul;        
     string artis;
-    int durasi;          // dalam detik
-    string tag[5];       // Array untuk genre/mood
-    int jumlahTag;       // Jumlah tag yang tersimpan
+    int durasi;          
     Lagu* kiri;
     Lagu* kanan;
     
@@ -21,90 +19,72 @@ struct Lagu {
 };
 
 // ============================================================
-// KELAS BST - Playlist Musik (ADT SPECIFICATION)
+// STRUKTUR NODE PARENT - Genre dalam Linked List (MLL)
+// ============================================================
+struct Genre {
+    string namaGenre;
+    Lagu* rootLagu;      // Pointer ke akar BST lagu untuk genre ini
+    Genre* next;         // Pointer ke genre selanjutnya (Linked List)
+
+    Genre(string nama);
+};
+
+// ============================================================
+// KELAS APLIKASI MUSIK - Gabungan MLL & BST
 // ============================================================
 class PlaylistMusik {
 private:
-    Lagu* akar;
+    Genre* headGenre; // Kepala dari Linked List Genre
     
-    // Helper: Masukkan lagu ke BST (berdasarkan perbandingan judul)
-    Lagu* masukkanHelper(Lagu* node, string judul, string artis, int durasi);
-    
-    // Helper: Cari berdasarkan judul
-    Lagu* cariJudul(Lagu* node, string judul);
-    
-    // Helper: Cari berdasarkan artis (menemukan semua yang cocok)
-    void cariArtis(Lagu* node, string artis, int& jumlah);
-    
-    // Helper: Temukan node dengan nilai minimum (paling kiri)
+    // --- HELPER BST (Bekerja pada node Lagu) ---
+    Lagu* masukkanLaguHelper(Lagu* node, string judul, string artis, int durasi);
+    Lagu* cariJudulHelper(Lagu* node, string judul);
+    void cariArtisHelper(Lagu* node, string artis, string genre, int& jumlah);
     Lagu* cariMin(Lagu* node);
+    Lagu* hapusLaguHelper(Lagu* node, string judul, bool& terhapus);
     
-    // Helper: Hapus lagu dari BST
-    Lagu* hapusHelper(Lagu* node, string judul, bool& terhapus);
-    
-    // Helper: Traversal Inorder (Kiri, Akar, Kanan) - Urutan terurut
+    // Traversal Helpers
     void inorder(Lagu* node);
-    
-    // Helper: Traversal Preorder (Akar, Kiri, Kanan)
     void preorder(Lagu* node);
-    
-    // Helper: Traversal Postorder (Kiri, Kanan, Akar)
     void postorder(Lagu* node);
     
-    // Helper: Hitung total lagu
+    // Helper Statistik
     int hitungLagu(Lagu* node);
-    
-    // Helper: Temukan lagu dengan durasi maksimal
     void cariDurasiMaks(Lagu* node, Lagu*& laguMaks);
-    
-    // Helper: Temukan lagu dengan durasi minimal
     void cariDurasiMin(Lagu* node, Lagu*& laguMin);
     
-    // Helper: Filter berdasarkan tag
-    void filterTag(Lagu* node, string tag, int& jumlah);
-    
-    // Helper: Filter berdasarkan jumlah tag
-    void filterJumlahTag(Lagu* node, int targetJumlah, int& jumlah);
-    
-    // Helper: Tampilkan detail satu lagu
-    void tampilkanLagu(Lagu* lagu);
-    
-    // Helper: Dealokasi memori (penghapusan postorder)
+    // Helper Dealokasi
     void hapusPohon(Lagu* node);
-    
+    void hapusSemuaGenre();
+
+    // --- HELPER MLL (Bekerja pada node Genre) ---
+    Genre* cariAtauBuatGenre(string namaGenre);
+    Genre* cariGenre(string namaGenre);
+
+    // Helper Tampilan
+    void tampilkanLagu(Lagu* lagu, string genreKonteks);
+
 public:
-    // Konstruktor
     PlaylistMusik();
-    
-    // Destruktor
     ~PlaylistMusik();
     
-    // Masukkan atau Update Lagu (overload untuk cek dulu tanpa durasi)
-    bool masukkanAtauUpdate(string judul, string artis);
+    // MLL + BST Operations
+    void tambahLagu(string genre, string judul, string artis, int durasi);
     
-    // Masukkan lagu baru dengan durasi
-    void masukkanLaguBaru(string judul, string artis, int durasi);
+    // Operasi Pencarian (Global di semua genre)
+    void cariLagu(string judul);
+    void cariLaguByArtis(string artis);
     
-    // Cari berdasarkan judul
-    void cari(string judul);
+    // Operasi Hapus
+    void hapusLagu(string judul); // Mencari di semua genre lalu menghapus
+    void hapusLaguDiGenre(string genre, string judul); // Hapus spesifik
     
-    // Cari berdasarkan artis
-    void cariMenurutArtis(string artis);
-    
-    // Hapus lagu
-    void hapusLagu(string judul);
-    
-    // Lihat playlist (traversal)
-    void lihatPlaylist(int tipeTraversal);
+    // Tampilkan Playlist (Traverse MLL lalu Traverse BST)
+    void lihatSemuaLagu();
+    void lihatLaguPerGenre(string genre);
     
     // Statistik
-    void tampilkanStatistik();
-    
-    // Filter berdasarkan tag/genre
-    void filterBerdasarkanTag(string tag);
-    
-    // Filter berdasarkan jumlah tag
-    void filterBerdasarkanJumlahTag(int targetJumlah);
+    void tampilkanStatistikGlobal();
 };
 
 #endif

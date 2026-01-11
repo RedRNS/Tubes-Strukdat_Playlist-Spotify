@@ -4,9 +4,7 @@
 #include <string>
 using namespace std;
 
-// ============================================================
-// STRUKTUR NODE CHILD - Lagu dalam BST (Kunci: judul)
-// ============================================================
+// Node BST untuk menyimpan data lagu
 struct Lagu {
     string judul;        
     string artis;
@@ -14,77 +12,76 @@ struct Lagu {
     Lagu* kiri;
     Lagu* kanan;
     
-    // Konstruktor
     Lagu(string j, string a, int d);
 };
 
-// ============================================================
-// STRUKTUR NODE PARENT - Genre dalam Linked List (MLL)
-// ============================================================
+// Node MLL untuk menyimpan genre (linked list)
 struct Genre {
     string namaGenre;
-    Lagu* rootLagu;      // Pointer ke akar BST lagu untuk genre ini
-    Genre* next;         // Pointer ke genre selanjutnya (Linked List)
+    Lagu* rootLagu;  // root BST lagu
+    Genre* next;     // pointer ke genre berikutnya
 
     Genre(string nama);
 };
 
-// ============================================================
-// KELAS APLIKASI MUSIK - Gabungan MLL & BST
-// ============================================================
+// Kelas utama playlist
 class PlaylistMusik {
 private:
-    Genre* headGenre; // Kepala dari Linked List Genre
+    Genre* headGenre;
     
-    // --- HELPER BST (Bekerja pada node Lagu) ---
+    // Helper BST
     Lagu* masukkanLaguHelper(Lagu* node, string judul, string artis, int durasi);
     Lagu* cariJudulHelper(Lagu* node, string judul);
     void cariArtisHelper(Lagu* node, string artis, string genre, int& jumlah);
+    void cariDurasiHelper(Lagu* node, int durasi, string genre, int& jumlah);
     Lagu* cariMin(Lagu* node);
     Lagu* hapusLaguHelper(Lagu* node, string judul, bool& terhapus);
     
-    // Traversal Helpers
+    // Traversal BST
     void inorder(Lagu* node);
     void preorder(Lagu* node);
     void postorder(Lagu* node);
+    void levelorder(Lagu* node);
     
-    // Helper Statistik
+    // Helper statistik
     int hitungLagu(Lagu* node);
     void cariDurasiMaks(Lagu* node, Lagu*& laguMaks);
     void cariDurasiMin(Lagu* node, Lagu*& laguMin);
     
-    // Helper Dealokasi
+    // Dealokasi
     void hapusPohon(Lagu* node);
     void hapusSemuaGenre();
 
-    // --- HELPER MLL (Bekerja pada node Genre) ---
+    // Helper MLL
     Genre* cariAtauBuatGenre(string namaGenre);
     Genre* cariGenre(string namaGenre);
 
-    // Helper Tampilan
     void tampilkanLagu(Lagu* lagu, string genreKonteks);
 
 public:
     PlaylistMusik();
     ~PlaylistMusik();
     
-    // MLL + BST Operations
+    // CRUD
     void tambahLagu(string genre, string judul, string artis, int durasi);
+    void updateLagu(string judul, string artisBaru, int durasiBaru);
+    void hapusLagu(string judul);
+    void hapusLaguDiGenre(string genre, string judul);
     
-    // Operasi Pencarian (Global di semua genre)
+    // Pencarian
     void cariLagu(string judul);
     void cariLaguByArtis(string artis);
+    void cariLaguByDurasi(int durasi);
     
-    // Operasi Hapus
-    void hapusLagu(string judul); // Mencari di semua genre lalu menghapus
-    void hapusLaguDiGenre(string genre, string judul); // Hapus spesifik
-    
-    // Tampilkan Playlist (Traverse MLL lalu Traverse BST)
+    // Tampil data
     void lihatSemuaLagu();
     void lihatLaguPerGenre(string genre);
+    void lihatDenganTraversal(string genre, int mode); // 1=pre, 2=in, 3=post, 4=level
     
     // Statistik
     void tampilkanStatistikGlobal();
+    void tampilkanStatistikPerGenre();
+    int hitungGenre();
 };
 
 #endif

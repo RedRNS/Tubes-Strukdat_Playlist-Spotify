@@ -1,11 +1,9 @@
 #include "playlist.h"
 #include <iostream>
-#include <limits>
+#include <queue>
 using namespace std;
 
-// ============================================================
-// IMPLEMENTASI STRUCT
-// ============================================================
+// Konstruktor Lagu
 Lagu::Lagu(string j, string a, int d) {
     judul = j;
     artis = a;
@@ -14,16 +12,14 @@ Lagu::Lagu(string j, string a, int d) {
     kanan = nullptr;
 }
 
+// Konstruktor Genre
 Genre::Genre(string nama) {
     namaGenre = nama;
     rootLagu = nullptr;
     next = nullptr;
 }
 
-// ============================================================
-// IMPLEMENTASI KELAS PLAYLISTMUSIK
-// ============================================================
-
+// Konstruktor & Destruktor PlaylistMusik
 PlaylistMusik::PlaylistMusik() {
     headGenre = nullptr;
 }
@@ -32,27 +28,22 @@ PlaylistMusik::~PlaylistMusik() {
     hapusSemuaGenre();
 }
 
-// ---------------- Helper MLL (Genre) ----------------
+// ========== HELPER MLL ==========
 
 Genre* PlaylistMusik::cariAtauBuatGenre(string nama) {
-    // 1. Jika list kosong
     if (headGenre == nullptr) {
         headGenre = new Genre(nama);
         return headGenre;
     }
 
-    // 2. Cari apakah genre sudah ada
     Genre* temp = headGenre;
     Genre* prev = nullptr;
     while (temp != nullptr) {
-        if (temp->namaGenre == nama) {
-            return temp; // Ketemu
-        }
+        if (temp->namaGenre == nama) return temp;
         prev = temp;
         temp = temp->next;
     }
 
-    // 3. Jika tidak ada, buat baru di akhir list
     prev->next = new Genre(nama);
     return prev->next;
 }
@@ -69,14 +60,24 @@ Genre* PlaylistMusik::cariGenre(string nama) {
 void PlaylistMusik::hapusSemuaGenre() {
     Genre* temp = headGenre;
     while (temp != nullptr) {
-        hapusPohon(temp->rootLagu); // Hapus BST-nya dulu
+        hapusPohon(temp->rootLagu);
         Genre* hapus = temp;
         temp = temp->next;
-        delete hapus; // Hapus node Genre
+        delete hapus;
     }
 }
 
-// ---------------- Helper BST (Lagu) ----------------
+int PlaylistMusik::hitungGenre() {
+    int count = 0;
+    Genre* temp = headGenre;
+    while (temp != nullptr) {
+        count++;
+        temp = temp->next;
+    }
+    return count;
+}
+
+// ========== HELPER BST ==========
 
 Lagu* PlaylistMusik::masukkanLaguHelper(Lagu* node, string judul, string artis, int durasi) {
     if (node == nullptr) {
@@ -84,7 +85,7 @@ Lagu* PlaylistMusik::masukkanLaguHelper(Lagu* node, string judul, string artis, 
     }
     
     if (judul == node->judul) {
-        cout << "Lagu '" << judul << "' sudah ada (Update Info).\n";
+        cout << "Lagu '" << judul << "' sudah ada, data diupdate.\n";
         node->artis = artis;
         node->durasi = durasi;
         return node;
@@ -102,7 +103,7 @@ Lagu* PlaylistMusik::cariJudulHelper(Lagu* node, string judul) {
     if (node == nullptr || node->judul == judul) return node;
     
     if (judul < node->judul) return cariJudulHelper(node->kiri, judul);
-    else return cariJudulHelper(node->kanan, judul);
+    return cariJudulHelper(node->kanan, judul);
 }
 
 void PlaylistMusik::cariArtisHelper(Lagu* node, string artis, string genre, int& jumlah) {
@@ -116,6 +117,17 @@ void PlaylistMusik::cariArtisHelper(Lagu* node, string artis, string genre, int&
     cariArtisHelper(node->kanan, artis, genre, jumlah);
 }
 
+void PlaylistMusik::cariDurasiHelper(Lagu* node, int durasi, string genre, int& jumlah) {
+    if (node == nullptr) return;
+    
+    cariDurasiHelper(node->kiri, durasi, genre, jumlah);
+    if (node->durasi == durasi) {
+        tampilkanLagu(node, genre);
+        jumlah++;
+    }
+    cariDurasiHelper(node->kanan, durasi, genre, jumlah);
+}
+
 Lagu* PlaylistMusik::hapusLaguHelper(Lagu* node, string judul, bool& terhapus) {
     if (node == nullptr) return nullptr;
     
@@ -125,19 +137,22 @@ Lagu* PlaylistMusik::hapusLaguHelper(Lagu* node, string judul, bool& terhapus) {
         node->kanan = hapusLaguHelper(node->kanan, judul, terhapus);
     } else {
         terhapus = true;
-        if (node->kiri == nullptr && node->kanan == nullptr) {
-            delete node; return nullptr;
-        } else if (node->kiri == nullptr) {
-            Lagu* temp = node->kanan; delete node; return temp;
+        // node tanpa anak atau 1 anak
+        if (node->kiri == nullptr) {
+            Lagu* temp = node->kanan;
+            delete node;
+            return temp;
         } else if (node->kanan == nullptr) {
-            Lagu* temp = node->kiri; delete node; return temp;
-        } else {
-            Lagu* pengganti = cariMin(node->kanan);
-            node->judul = pengganti->judul;
-            node->artis = pengganti->artis;
-            node->durasi = pengganti->durasi;
-            node->kanan = hapusLaguHelper(node->kanan, pengganti->judul, terhapus);
+            Lagu* temp = node->kiri;
+            delete node;
+            return temp;
         }
+        // node dengan 2 anak
+        Lagu* pengganti = cariMin(node->kanan);
+        node->judul = pengganti->judul;
+        node->artis = pengganti->artis;
+        node->durasi = pengganti->durasi;
+        node->kanan = hapusLaguHelper(node->kanan, pengganti->judul, terhapus);
     }
     return node;
 }
@@ -147,11 +162,43 @@ Lagu* PlaylistMusik::cariMin(Lagu* node) {
     return node;
 }
 
+// ========== TRAVERSAL BST ==========
+
 void PlaylistMusik::inorder(Lagu* node) {
     if (node == nullptr) return;
     inorder(node->kiri);
     tampilkanLagu(node, "");
     inorder(node->kanan);
+}
+
+void PlaylistMusik::preorder(Lagu* node) {
+    if (node == nullptr) return;
+    tampilkanLagu(node, "");
+    preorder(node->kiri);
+    preorder(node->kanan);
+}
+
+void PlaylistMusik::postorder(Lagu* node) {
+    if (node == nullptr) return;
+    postorder(node->kiri);
+    postorder(node->kanan);
+    tampilkanLagu(node, "");
+}
+
+void PlaylistMusik::levelorder(Lagu* node) {
+    if (node == nullptr) return;
+    
+    queue<Lagu*> q;
+    q.push(node);
+    
+    while (!q.empty()) {
+        Lagu* curr = q.front();
+        q.pop();
+        tampilkanLagu(curr, "");
+        
+        if (curr->kiri) q.push(curr->kiri);
+        if (curr->kanan) q.push(curr->kanan);
+    }
 }
 
 void PlaylistMusik::hapusPohon(Lagu* node) {
@@ -161,7 +208,8 @@ void PlaylistMusik::hapusPohon(Lagu* node) {
     delete node;
 }
 
-// Statistik Helpers
+// ========== HELPER STATISTIK ==========
+
 int PlaylistMusik::hitungLagu(Lagu* node) {
     if (node == nullptr) return 0;
     return 1 + hitungLagu(node->kiri) + hitungLagu(node->kanan);
@@ -182,42 +230,56 @@ void PlaylistMusik::cariDurasiMin(Lagu* node, Lagu*& laguMin) {
 }
 
 void PlaylistMusik::tampilkanLagu(Lagu* lagu, string genreKonteks) {
-    cout << "- " << lagu->judul << " (" << lagu->artis << ") [" 
-         << lagu->durasi / 60 << "m" << lagu->durasi % 60 << "s]";
-    if (!genreKonteks.empty()) cout << " [Genre: " << genreKonteks << "]";
+    int menit = lagu->durasi / 60;
+    int detik = lagu->durasi % 60;
+    cout << "  - " << lagu->judul << " | " << lagu->artis << " | " << menit << "m" << detik << "s";
+    if (!genreKonteks.empty()) cout << " [" << genreKonteks << "]";
     cout << endl;
 }
 
-// ---------------- PUBLIC METHODS ----------------
+// ========== FUNGSI PUBLIK ==========
 
 void PlaylistMusik::tambahLagu(string genre, string judul, string artis, int durasi) {
-    // 1. Cari atau Buat Node Genre (MLL)
     Genre* g = cariAtauBuatGenre(genre);
-    
-    // 2. Masukkan Lagu ke BST milik genre tersebut
     g->rootLagu = masukkanLaguHelper(g->rootLagu, judul, artis, durasi);
+    cout << "Lagu '" << judul << "' ditambahkan ke genre " << genre << ".\n";
+}
+
+void PlaylistMusik::updateLagu(string judul, string artisBaru, int durasiBaru) {
+    Genre* curr = headGenre;
+    while (curr != nullptr) {
+        Lagu* hasil = cariJudulHelper(curr->rootLagu, judul);
+        if (hasil != nullptr) {
+            hasil->artis = artisBaru;
+            hasil->durasi = durasiBaru;
+            cout << "Lagu '" << judul << "' berhasil diupdate.\n";
+            return;
+        }
+        curr = curr->next;
+    }
+    cout << "Lagu '" << judul << "' tidak ditemukan.\n";
 }
 
 void PlaylistMusik::cariLagu(string judul) {
-    cout << "\n--- Mencari '" << judul << "' di semua genre ---\n";
+    cout << "\n>> Mencari '" << judul << "'...\n";
     Genre* curr = headGenre;
     bool found = false;
     
     while (curr != nullptr) {
         Lagu* hasil = cariJudulHelper(curr->rootLagu, judul);
         if (hasil != nullptr) {
-            cout << "Ditemukan di Genre: " << curr->namaGenre << endl;
-            tampilkanLagu(hasil, curr->namaGenre);
+            cout << "Ditemukan di genre: " << curr->namaGenre << endl;
+            tampilkanLagu(hasil, "");
             found = true;
         }
         curr = curr->next;
     }
     
-    if (!found) cout << "Lagu tidak ditemukan di genre manapun.\n";
+    if (!found) cout << "Lagu tidak ditemukan.\n";
 }
 
 void PlaylistMusik::cariLaguByArtis(string artis) {
-    cout << "\n--- Mencari Artis '" << artis << "' ---\n";
+    cout << "\n>> Mencari artis '" << artis << "'...\n";
     Genre* curr = headGenre;
     int total = 0;
     
@@ -227,6 +289,21 @@ void PlaylistMusik::cariLaguByArtis(string artis) {
     }
     
     if (total == 0) cout << "Tidak ada lagu dari artis tersebut.\n";
+    else cout << "Total: " << total << " lagu ditemukan.\n";
+}
+
+void PlaylistMusik::cariLaguByDurasi(int durasi) {
+    cout << "\n>> Mencari durasi " << durasi << " detik...\n";
+    Genre* curr = headGenre;
+    int total = 0;
+    
+    while (curr != nullptr) {
+        cariDurasiHelper(curr->rootLagu, durasi, curr->namaGenre, total);
+        curr = curr->next;
+    }
+    
+    if (total == 0) cout << "Tidak ada lagu dengan durasi tersebut.\n";
+    else cout << "Total: " << total << " lagu ditemukan.\n";
 }
 
 void PlaylistMusik::hapusLagu(string judul) {
@@ -237,26 +314,41 @@ void PlaylistMusik::hapusLagu(string judul) {
         bool terhapusLokal = false;
         curr->rootLagu = hapusLaguHelper(curr->rootLagu, judul, terhapusLokal);
         if (terhapusLokal) {
-            cout << "Dihapus dari Genre: " << curr->namaGenre << endl;
+            cout << "Lagu '" << judul << "' dihapus dari genre " << curr->namaGenre << ".\n";
             terhapusGlobal = true;
         }
         curr = curr->next;
     }
     
-    if (!terhapusGlobal) cout << "Lagu tidak ditemukan untuk dihapus.\n";
+    if (!terhapusGlobal) cout << "Lagu tidak ditemukan.\n";
+}
+
+void PlaylistMusik::hapusLaguDiGenre(string genre, string judul) {
+    Genre* g = cariGenre(genre);
+    if (g == nullptr) {
+        cout << "Genre '" << genre << "' tidak ada.\n";
+        return;
+    }
+    
+    bool terhapus = false;
+    g->rootLagu = hapusLaguHelper(g->rootLagu, judul, terhapus);
+    
+    if (terhapus) cout << "Lagu '" << judul << "' dihapus dari genre " << genre << ".\n";
+    else cout << "Lagu tidak ditemukan di genre tersebut.\n";
 }
 
 void PlaylistMusik::lihatSemuaLagu() {
     if (headGenre == nullptr) {
-        cout << "Playlist Kosong.\n";
+        cout << "Playlist kosong.\n";
         return;
     }
     
+    cout << "\n========== SEMUA PLAYLIST ==========\n";
     Genre* curr = headGenre;
     while (curr != nullptr) {
-        cout << "\n[ GENRE: " << curr->namaGenre << " ]\n";
+        cout << "\n[" << curr->namaGenre << "] - " << hitungLagu(curr->rootLagu) << " lagu\n";
         if (curr->rootLagu == nullptr) {
-            cout << "(Kosong)\n";
+            cout << "  (kosong)\n";
         } else {
             inorder(curr->rootLagu);
         }
@@ -271,40 +363,110 @@ void PlaylistMusik::lihatLaguPerGenre(string genre) {
         return;
     }
     
-    cout << "\n[ GENRE: " << g->namaGenre << " ]\n";
-    inorder(g->rootLagu);
+    cout << "\n[" << g->namaGenre << "] - " << hitungLagu(g->rootLagu) << " lagu\n";
+    if (g->rootLagu == nullptr) {
+        cout << "  (kosong)\n";
+    } else {
+        inorder(g->rootLagu);
+    }
+}
+
+void PlaylistMusik::lihatDenganTraversal(string genre, int mode) {
+    Genre* g = cariGenre(genre);
+    if (g == nullptr) {
+        cout << "Genre '" << genre << "' tidak ditemukan.\n";
+        return;
+    }
+    
+    if (g->rootLagu == nullptr) {
+        cout << "Genre " << genre << " kosong.\n";
+        return;
+    }
+    
+    cout << "\n[" << g->namaGenre << "] ";
+    switch (mode) {
+        case 1:
+            cout << "- Preorder:\n";
+            preorder(g->rootLagu);
+            break;
+        case 2:
+            cout << "- Inorder:\n";
+            inorder(g->rootLagu);
+            break;
+        case 3:
+            cout << "- Postorder:\n";
+            postorder(g->rootLagu);
+            break;
+        case 4:
+            cout << "- Level Order:\n";
+            levelorder(g->rootLagu);
+            break;
+        default:
+            cout << "Mode tidak valid.\n";
+    }
 }
 
 void PlaylistMusik::tampilkanStatistikGlobal() {
+    if (headGenre == nullptr) {
+        cout << "Playlist kosong.\n";
+        return;
+    }
+    
     Genre* curr = headGenre;
     int totalLagu = 0;
+    int totalGenre = 0;
     Lagu* globalMax = nullptr;
     Lagu* globalMin = nullptr;
     
     while (curr != nullptr) {
+        totalGenre++;
         totalLagu += hitungLagu(curr->rootLagu);
         
         Lagu* localMax = nullptr;
-        cariDurasiMaks(curr->rootLagu, localMax);
-        if (localMax) {
-            if (!globalMax || localMax->durasi > globalMax->durasi) globalMax = localMax;
-        }
-        
         Lagu* localMin = nullptr;
+        cariDurasiMaks(curr->rootLagu, localMax);
         cariDurasiMin(curr->rootLagu, localMin);
-        if (localMin) {
-            if (!globalMin || localMin->durasi < globalMin->durasi) globalMin = localMin;
-        }
+        
+        if (localMax && (!globalMax || localMax->durasi > globalMax->durasi)) 
+            globalMax = localMax;
+        if (localMin && (!globalMin || localMin->durasi < globalMin->durasi)) 
+            globalMin = localMin;
         
         curr = curr->next;
     }
     
-    cout << "\n=== STATISTIK GLOBAL ===\n";
-    cout << "Total Lagu (Semua Genre): " << totalLagu << endl;
+    cout << "\n========== STATISTIK GLOBAL ==========\n";
+    cout << "Total Genre   : " << totalGenre << endl;
+    cout << "Total Lagu    : " << totalLagu << endl;
     if (globalMax) {
-        cout << "Lagu Terpanjang: " << globalMax->judul << " (" << globalMax->durasi << "s)\n";
+        cout << "Lagu Terpanjang: " << globalMax->judul << " (" << globalMax->durasi << " detik)\n";
     }
     if (globalMin) {
-        cout << "Lagu Terpendek : " << globalMin->judul << " (" << globalMin->durasi << "s)\n";
+        cout << "Lagu Terpendek : " << globalMin->judul << " (" << globalMin->durasi << " detik)\n";
+    }
+}
+
+void PlaylistMusik::tampilkanStatistikPerGenre() {
+    if (headGenre == nullptr) {
+        cout << "Playlist kosong.\n";
+        return;
+    }
+    
+    cout << "\n========== STATISTIK PER GENRE ==========\n";
+    Genre* curr = headGenre;
+    
+    while (curr != nullptr) {
+        int jumlah = hitungLagu(curr->rootLagu);
+        Lagu* lMax = nullptr;
+        Lagu* lMin = nullptr;
+        cariDurasiMaks(curr->rootLagu, lMax);
+        cariDurasiMin(curr->rootLagu, lMin);
+        
+        cout << "\n[" << curr->namaGenre << "]\n";
+        cout << "  Jumlah Lagu: " << jumlah << endl;
+        if (lMax) cout << "  Terpanjang : " << lMax->judul << " (" << lMax->durasi << "s)\n";
+        if (lMin) cout << "  Terpendek  : " << lMin->judul << " (" << lMin->durasi << "s)\n";
+        
+        curr = curr->next;
     }
 }
